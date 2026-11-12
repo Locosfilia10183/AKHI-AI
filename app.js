@@ -11,7 +11,7 @@
   const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
   let supabaseClient = null, authSession = null, userId = null;
   const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
-  let db, chats = [], activeChat = null, sending = false, memories = [];
+  let db, chats = [], activeChat = null, sending = false, memories = [], attachments = [], lastAssistantText = "";
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -141,15 +141,39 @@
       target.append(btn);
     });
   }
+
+  async function parseFile(file) {
+    if(file.size>8*1024*1024) throw new Error(file.name+" ist größer als 8 MB.");
+    if(file.type.startsWith("image/")) return {name:file.name,type:"image",data:await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file);})};
+    let text="";
+    if(/\.pdf$/i.test(file.name)){
+      if(!window.pdfjsLib)throw new Error("PDF-Bibliothek nicht geladen.");
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      for(let i=1;i<=Math.min(pdf.numPages,35);i++){const p=await pdf.getPage(i);const c=await p.getTextContent();text+=c.items.map(x=>x.str).join(" ")+"\n";}
+    } else if(/\.docx$/i.test(file.name)){if(!window.mammoth)throw new Error("Word-Leser nicht geladen.");text=(await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}
+    else if(/\.(xlsx|xls)$/i.test(file.name)){if(!window.XLSX)throw new Error("Excel-Leser nicht geladen.");const w=XLSX.read(await file.arrayBuffer(),{type:"array"});text=w.SheetNames.map(n=>n+"\n"+XLSX.utils.sheet_to_csv(w.Sheets[n])).join("\n");}
+    else text=await file.text();
+    return {name:file.name,type:"text",text:text.slice(0,45000)};
+  }
+  function drawAttachments(){const h=$("#attachmentPreview");h.replaceChildren();attachments.forEach((a,i)=>{const b=document.createElement("button");b.type="button";b.textContent="📎 "+a.name+" ×";b.onclick=()=>{attachments.splice(i,1);drawAttachments();};h.append(b);});}
+  function setupTools(){
+    $("#attachBtn").onclick=()=>$("#fileInput").click();
+    $("#fileInput").onchange=async e=>{for(const f of e.target.files){try{attachments.push(await parseFile(f));}catch(err){toast(err.message);}}drawAttachments();e.target.value="";};
+    const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+    $("#voiceBtn").onclick=()=>{if(!Speech){toast("Spracheingabe wird hier nicht unterstützt.");return;}const rec=new Speech();rec.lang="de-DE";rec.onresult=e=>{$("#prompt").value+=($("#prompt").value?" ":"")+e.results[0][0].transcript;};rec.onerror=()=>toast("Mikrofon nicht verfügbar.");rec.start();};
+    $("#speakBtn").onclick=()=>{if(!lastAssistantText)return toast("Noch keine Antwort vorhanden.");speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(lastAssistantText));};
+  }
+
   async function send() {
     if (sending) return;
     const input = $("#prompt"), text = input.value.trim();
-    if (!text) return;
+    if (!text && !attachments.length) return;
     let chat = current();
     if (!chat) { makeChat(); chat = current(); }
     input.value = "";
     if (!chat.messages.length) chat.title = text.slice(0, 42);
-    chat.messages.push({role:"user", content:text}); bubble("user", text); await save();
+    const promptText=text||"Bitte analysiere meine Anhänge."; const attachmentText=attachments.filter(a=>a.type==="text").map(a=>"\n[Datei "+a.name+"]\n"+a.text).join(""); chat.messages.push({role:"user", content:promptText+attachmentText}); bubble("user", promptText+(attachments.length?"\n📎 "+attachments.map(a=>a.name).join(", "):"")); await save();
     if (/^(hi|hey|hallo|servus|moin|guten morgen|guten tag|guten abend)[!.?\s]*$/i.test(text)) {
       chat.messages.push({role:"assistant", content:INTRO}); bubble("assistant", INTRO); await save(); return;
     }
@@ -158,12 +182,12 @@
     try {
       const response = await fetch(BACKEND + "/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories})
+        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments,mode:$("#assistantMode").value})
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Serverfehler (${response.status})`);
       if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Die KI hat keine Antwort geliefert.");
-      pending.textContent = data.reply; downloadCode(pending, data.reply);
+      pending.textContent = data.reply; lastAssistantText=data.reply; downloadCode(pending, data.reply); attachments=[]; drawAttachments();
       chat.messages.push({role:"assistant", content:data.reply});
       await updateMemory(chat);
     } catch (error) {
@@ -216,6 +240,7 @@
     $("#sendBtn").addEventListener("click", send);
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
+    setupTools();
     renderMemory();
     // Erinnerungen werden erst nach einer echten Unterhaltung aktualisiert.
     setupSidebar();
