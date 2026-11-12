@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="description" content="AKHI AI – dein persönlicher KI-Assistent.">
   <title>AKHI AI</title>
-  <link rel="stylesheet" href="./style.css?v=11">
+  <link rel="stylesheet" href="./style.css?v=12">
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then(items => items.forEach(item => item.unregister())).catch(() => {});
@@ -20,7 +20,7 @@
   <section class="auth-gate" id="authGate"><div class="auth-card"><div class="auth-logo">A</div><div class="auth-kicker">DEIN PERSÖNLICHER KI-ASSISTENT</div><h1>Willkommen bei <span>AKHI AI</span></h1><p>Melde dich an, um dein persönliches Konto zu nutzen.</p><label class="auth-field">E-Mail-Adresse<input id="authEmail" type="email" autocomplete="email" placeholder="name@beispiel.de"></label><label class="auth-field">Passwort<input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mindestens 8 Zeichen"></label><button class="oauth-button google" id="emailSignup" type="button">Kostenloses Konto erstellen</button><button class="oauth-button apple" id="emailLogin" type="button">Mit E-Mail anmelden</button><button class="oauth-button google" id="googleLogin" type="button"><span class="google-g">G</span> Mit Google fortfahren</button><button class="oauth-button apple" id="appleLogin" type="button"><span class="apple-mark">●</span> Mit Apple fortfahren</button><div id="authMessage" class="auth-message" role="status">Sichere Anmeldung über Supabase</div><small>Deine Anmeldung wird sicher über Supabase verarbeitet.</small></div></section>
   <div class="app" id="mainApp">
     <header class="topbar">
-      <button class="menu-trigger" id="menuToggle" type="button" aria-label="Chat-Menü öffnen" aria-expanded="false" title="Chats öffnen"><span></span><span></span><span></span></button>
+      <button class="menu-trigger" id="menuToggle" type="button" aria-label="Chat-Menü öffnen" aria-expanded="false" title="Chatverlauf öffnen"><span></span><span></span><span></span></button>
       <a class="brand" href="/" aria-label="AKHI AI Startseite">
         <span class="brand-mark">A</span>
         <span>AKHI <b>AI</b></span>
@@ -46,11 +46,11 @@
             <p>Abi, sag mir einfach, wobei ich dir helfen soll.</p>
           </div>
           <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions text">
-            <div class="welcome"><div class="orb">✧</div><h2>Hallo, Abi!</h2><p>Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?</p></div>
+            <div class="welcome"><div class="orb">✧</div><h2>Hallo, Abi!</h2><p>Ich bin AKHI AI – dein persönlicher Assistent. Ich helfe dir beim Denken, Lernen, Programmieren, Planen und Recherchieren. Schreib einfach los.</p></div>
           </div>
           <div class="composer-wrap">
             <div class="composer-tools"><button id="attachBtn" type="button">＋ Datei/Bild</button><input id="fileInput" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.xls,image/*" multiple hidden><button id="voiceBtn" type="button" title="Spracheingabe">🎙</button><button id="speakBtn" type="button" title="Antwort vorlesen">🔊</button></div><div id="attachmentPreview" class="attachment-preview"></div><div class="composer">
-              <textarea id="prompt" rows="1" maxlength="12000" placeholder="Schreib AKHI AI eine Nachricht …" aria-label="Deine Nachricht"></textarea>
+              <textarea id="prompt" rows="1" maxlength="12000" placeholder="Nachricht an AKHI AI …" aria-label="Deine Nachricht"></textarea>
               <button id="sendBtn" type="button" aria-label="Nachricht senden" title="Senden">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
               </button>
