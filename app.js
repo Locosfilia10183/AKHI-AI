@@ -6,7 +6,7 @@
   "use strict";
   const $ = s => document.querySelector(s);
   const DB_NAME = "akhi-ai-db", STORE = "kv";
-  const BACKEND = "https://akhi-ai-api.onrender.com";
+  const BACKEND = "https://api-akhi.duckdns.org";
   const SUPABASE_URL = "https://jeubdegyactnxjpperkr.supabase.co";
   const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
   let supabaseClient = null, authSession = null, userId = null;
