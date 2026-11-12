@@ -182,7 +182,7 @@
     try {
       const response = await fetch(BACKEND + "/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments,mode:$("#assistantMode").value})
+        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments})
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Serverfehler (${response.status})`);
