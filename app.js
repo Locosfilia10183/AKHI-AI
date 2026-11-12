@@ -258,6 +258,17 @@
     supabaseClient.auth.onAuthStateChange((event,nextSession)=>{const nextId=nextSession?.user?.id||null;authSession=nextSession;setSession(nextSession);if(["SIGNED_IN","SIGNED_OUT","USER_UPDATED"].includes(event)&&nextId!==userId)window.location.reload();});
     const login=provider=>async()=>{message.textContent="Weiterleitung zur sicheren Anmeldung …";const {error}=await supabaseClient.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}});if(error)message.textContent=error.message;};
     $("#googleLogin").addEventListener("click",login("google"));$("#appleLogin").addEventListener("click",login("apple"));
+    const emailAction=async mode=>{
+      const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
+      if(!email||password.length<8){message.textContent="Bitte gültige E-Mail und ein Passwort mit mindestens 8 Zeichen eingeben.";return;}
+      message.textContent=mode==="signup"?"Dein kostenloses Konto wird erstellt …":"Du wirst angemeldet …";
+      const result=mode==="signup"?await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}}):await supabaseClient.auth.signInWithPassword({email,password});
+      if(result.error){message.textContent=result.error.message;return;}
+      message.textContent=mode==="signup"?"Konto erstellt. Prüfe ggf. dein E-Mail-Postfach zur Bestätigung.":"Anmeldung erfolgreich …";
+      if(result.data?.session)window.location.reload();
+    };
+    $("#emailSignup").addEventListener("click",()=>emailAction("signup"));
+    $("#emailLogin").addEventListener("click",()=>emailAction("login"));
   }
   async function boot() {
     await initAuth();
