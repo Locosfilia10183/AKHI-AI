@@ -7,6 +7,9 @@
   const $ = s => document.querySelector(s);
   const DB_NAME = "akhi-ai-db", STORE = "kv";
   const BACKEND = "https://akhi-ai-api.onrender.com";
+  const SUPABASE_URL = "https://jeubdegyactnxjpperkr.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
+  let supabaseClient = null;
   const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
   let db, chats = [], activeChat = null, sending = false, memories = [];
 
@@ -157,12 +160,24 @@
     large.addEventListener("change", () => { localStorage.setItem("akhi-large-text", large.checked ? "1" : "0"); document.body.classList.toggle("large-chat", large.checked); });
     enter.addEventListener("change", () => localStorage.setItem("akhi-enter-send", enter.checked ? "1" : "0"));
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") === "0") e.stopImmediatePropagation(); }, true);
+    $("#signOutBtn").addEventListener("click",async()=>{if(!supabaseClient)return;const {error}=await supabaseClient.auth.signOut();if(error)toast(error.message);});
     $("#clearMemory").addEventListener("click",async()=>{if(!confirm("Alle Erinnerungen löschen?"))return;memories=[];await saveMemory();toast("Gedächtnis gelöscht.");});
     $("#clearHistory").addEventListener("click", async () => { if (!confirm("Möchtest du wirklich deinen gesamten lokalen Chatverlauf löschen?")) return; chats=[]; const fresh={id:id(),title:"Neuer Chat",messages:[],created:Date.now()}; chats=[fresh]; activeChat=fresh.id; await save(); render(); close(); toast("Chatverlauf wurde gelöscht."); });
     const updateStatus = () => { const label=$("#connectionLabel")?.textContent || "Status unbekannt"; $("#settingsStatus").textContent=label; const dot=$("#connectionDot"); $("#settingsStatusDot").className="online-dot "+(dot?.classList.contains("offline")?"offline":dot?.classList.contains("checking")?"checking":""); };
     updateStatus(); setInterval(updateStatus, 3000);
   }
+  async function initAuth() {
+    const gate=$("#authGate"), message=$("#authMessage"), app=$("#mainApp");
+    const setSession=session=>{document.body.classList.toggle("authenticated",!!session);gate.hidden=!!session;app.setAttribute("aria-hidden",String(!session));$("#accountEmail").textContent=session?.user?.email||"Nicht angemeldet";};
+    if(!window.supabase?.createClient){message.textContent="Anmeldedienst konnte nicht geladen werden. Bitte Seite neu laden.";return;}
+    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const {data:{session}}=await supabaseClient.auth.getSession();setSession(session);
+    supabaseClient.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession));
+    const login=provider=>async()=>{message.textContent="Weiterleitung zur sicheren Anmeldung …";const {error}=await supabaseClient.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}});if(error)message.textContent=error.message;};
+    $("#googleLogin").addEventListener("click",login("google"));$("#appleLogin").addEventListener("click",login("apple"));
+  }
   async function boot() {
+    await initAuth();
     await openDB();
     chats = (await get("chats")) || [];
     memories = (await get("memory")) || [];
