@@ -8,7 +8,7 @@
   const DB_NAME = "akhi-ai-db", STORE = "kv";
   const BACKEND = "https://akhi-ai-api.onrender.com";
   const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
-  let db, chats = [], activeChat = null, sending = false;
+  let db, chats = [], activeChat = null, sending = false, memories = [];
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -36,6 +36,9 @@
   const id = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
   const current = () => chats.find(c => c.id === activeChat);
   async function save() { await put("chats", chats); await put("activeChat", activeChat); }
+  async function saveMemory() { await put("memory", memories); renderMemory(); }
+  function renderMemory() { const host=$("#memoryList"); if(!host)return; host.replaceChildren(); $("#memoryCount").textContent=memories.length+" Erinnerungen"; if(!memories.length){const p=document.createElement("p");p.className="memory-empty";p.textContent="Noch keine Erinnerungen gespeichert.";host.append(p);return;} memories.forEach((item,index)=>{const row=document.createElement("div");row.className="memory-item";const span=document.createElement("span");span.textContent=item;const del=document.createElement("button");del.type="button";del.textContent="×";del.addEventListener("click",async()=>{memories.splice(index,1);await saveMemory();});row.append(span,del);host.append(row);}); }
+  async function updateMemory(chat) { try { const r=await fetch(BACKEND+"/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({memory:memories,messages:chat.messages.slice(-16)})}); if(!r.ok)return; const d=await r.json(); if(Array.isArray(d.memory)){memories=d.memory.filter(x=>typeof x==="string").slice(0,40);await saveMemory();} } catch(e) { console.warn("Memory update failed",e); } }
 
   function bubble(role, content) {
     const host = $("#messages");
@@ -123,13 +126,14 @@
     try {
       const response = await fetch(BACKEND + "/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:chat.messages.slice(-20)})
+        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories})
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Serverfehler (${response.status})`);
       if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Die KI hat keine Antwort geliefert.");
       pending.textContent = data.reply; downloadCode(pending, data.reply);
       chat.messages.push({role:"assistant", content:data.reply});
+      await updateMemory(chat);
     } catch (error) {
       const message = `Abi, gerade klappt die Verbindung nicht: ${error.message}`;
       pending.textContent = message; chat.messages.push({role:"assistant", content:message});
@@ -153,6 +157,7 @@
     large.addEventListener("change", () => { localStorage.setItem("akhi-large-text", large.checked ? "1" : "0"); document.body.classList.toggle("large-chat", large.checked); });
     enter.addEventListener("change", () => localStorage.setItem("akhi-enter-send", enter.checked ? "1" : "0"));
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") === "0") e.stopImmediatePropagation(); }, true);
+    $("#clearMemory").addEventListener("click",async()=>{if(!confirm("Alle Erinnerungen löschen?"))return;memories=[];await saveMemory();toast("Gedächtnis gelöscht.");});
     $("#clearHistory").addEventListener("click", async () => { if (!confirm("Möchtest du wirklich deinen gesamten lokalen Chatverlauf löschen?")) return; chats=[]; const fresh={id:id(),title:"Neuer Chat",messages:[],created:Date.now()}; chats=[fresh]; activeChat=fresh.id; await save(); render(); close(); toast("Chatverlauf wurde gelöscht."); });
     const updateStatus = () => { const label=$("#connectionLabel")?.textContent || "Status unbekannt"; $("#settingsStatus").textContent=label; const dot=$("#connectionDot"); $("#settingsStatusDot").className="online-dot "+(dot?.classList.contains("offline")?"offline":dot?.classList.contains("checking")?"checking":""); };
     updateStatus(); setInterval(updateStatus, 3000);
@@ -160,6 +165,7 @@
   async function boot() {
     await openDB();
     chats = (await get("chats")) || [];
+    memories = (await get("memory")) || [];
     activeChat = (await get("activeChat")) || null;
     if (!chats.length) { const first = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()}; chats=[first]; activeChat=first.id; }
     if (!chats.some(c => c.id === activeChat && !c.archived)) activeChat = chats.find(c=>!c.archived)?.id || null;
@@ -167,6 +173,7 @@
     $("#sendBtn").addEventListener("click", send);
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
+    renderMemory();
     setupSidebar();
     $("#newChatBtn").addEventListener("click", makeChat);
     $("#chatSearch").addEventListener("input", renderChatList);
