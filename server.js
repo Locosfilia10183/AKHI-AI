@@ -23,6 +23,18 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://localhost");
   if (url.pathname === "/api/health" && req.method === "GET")
     return send(res, 200, {ok:true, provider:"OpenRouter", model:MODEL, configured:Boolean(API_KEY)});
+  if (url.pathname === "/api/image" && req.method === "POST") {
+    if (origin && origin !== ALLOWED_ORIGIN) return send(res,403,{error:"Origin nicht erlaubt"});
+    let body="";
+    for await (const chunk of req) { body+=chunk; if(body.length>5000) return send(res,413,{error:"Bildbeschreibung zu lang"}); }
+    try {
+      const input=JSON.parse(body||"{}");
+      const prompt=typeof input.prompt==="string"?input.prompt.trim().slice(0,1200):"";
+      if(!prompt) return send(res,400,{error:"Bitte beschreibe das gewünschte Bild."});
+      const imageUrl="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=768&height=768&nologo=true";
+      return send(res,200,{imageUrl,provider:"Pollinations",notice:"Kostenlose anonyme Generierung mit möglichen Wartezeiten und Nutzungslimits."});
+    } catch { return send(res,400,{error:"Ungültige Anfrage"}); }
+  }
   if (!["/api/chat","/api/memory"].includes(url.pathname) || req.method !== "POST") return send(res,404,{error:"Nicht gefunden"});
   if (origin && origin !== ALLOWED_ORIGIN) return send(res,403,{error:"Origin nicht erlaubt"});
   const ip = req.socket.remoteAddress || "unknown";
