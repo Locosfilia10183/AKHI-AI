@@ -1,20 +1,19 @@
-AKHI AI – Single Chat Fix
+AKHI AI – Automatische Verbindung
 
-Enthalten:
-- index.html: vollständige Chat-Oberfläche
-- style.css: vollständiges responsives Design
-- app.js: bestehende Chat-Logik mit IndexedDB und Render-Backend
-- sw.js: entfernt alte AKHI-Caches und verhindert veraltete Offline-Dateien
+Dateien im ZIP:
+- index.html: zeigt den echten Verbindungsstatus und lädt den Monitor
+- style.css: Statusanzeige
+- connection-monitor.js: prüft /api/health, pingt alle 4 Minuten bei sichtbarem Tab und versucht Chat-Anfragen bei Netzwerk-/5xx-Fehlern erneut
 
-Backend:
-https://akhi-ai-api.onrender.com
-Die OpenRouter-API-Key bleibt ausschließlich im Render-Backend und gehört NICHT in diese Dateien.
-
-Einbau:
+Installation:
 1. ZIP entpacken.
-2. Die vier Dateien im Stammverzeichnis des GitHub-Repositories AKHI-AI ersetzen.
-3. Commit auf main ausführen.
-4. Warten, bis Render die neue Version veröffentlicht hat.
-5. Website auf dem iPhone neu laden.
+2. index.html und style.css im Repository-Stammverzeichnis ersetzen.
+3. connection-monitor.js neu im Repository-Stammverzeichnis hinzufügen.
+4. Commit auf main. Render deployt automatisch.
 
-Wichtig: Die Dateien in diesem ZIP wurden vor dem Packen auf Existenz, Dateigröße und ZIP-Integrität geprüft.
+Wichtig:
+- Die Verbindung wird automatisch hergestellt, solange die Website geöffnet ist.
+- Die regelmäßigen Pings können den Ruhezustand während der Nutzung verzögern.
+- Wenn Safari/Browser geschlossen oder im Hintergrund stark pausiert wird, kann das kostenlose Render-Backend trotzdem schlafen.
+- Das garantiert keinen 24/7-Betrieb. Für dauerhaftes Always-on ist ein dauerhaft laufender Hosting-Plan nötig.
+- Der OpenRouter-Free-Endpunkt kann eigene Limits haben.
