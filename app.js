@@ -48,6 +48,21 @@
     row.append(avatar, body); host.append(row); host.scrollTop = host.scrollHeight;
     return body;
   }
+  function renderChatList() {
+    const host=$("#chatList"); if(!host) return; host.replaceChildren();
+    const query=($("#chatSearch")?.value||"").trim().toLowerCase();
+    const visible=chats.filter(c=>!c.archived && (!query || (c.title||"").toLowerCase().includes(query) || c.messages.some(m=>m.content.toLowerCase().includes(query))));
+    if(!visible.length){const empty=document.createElement("div");empty.className="chat-empty";empty.textContent=query?"Keine passenden Chats":"Noch keine Chats";host.append(empty);return;}
+    visible.forEach(chat=>{
+      const item=document.createElement("div");item.className="chat-item"+(chat.id===activeChat?" active":"");
+      const title=document.createElement("span");title.className="chat-item-title";title.textContent=chat.title||"Neuer Chat";title.addEventListener("click",()=>{activeChat=chat.id;save().then(render);});
+      const actions=document.createElement("span");actions.className="chat-actions";
+      const rename=document.createElement("button");rename.type="button";rename.textContent="✎";rename.title="Umbenennen";rename.setAttribute("aria-label","Chat umbenennen");rename.addEventListener("click",()=>{const next=prompt("Neuer Chatname:",chat.title||"Neuer Chat");if(next&&next.trim()){chat.title=next.trim().slice(0,70);save().then(render);}});
+      const archive=document.createElement("button");archive.type="button";archive.textContent="⌑";archive.title="Archivieren";archive.setAttribute("aria-label","Chat archivieren");archive.addEventListener("click",()=>{chat.archived=true;if(activeChat===chat.id){activeChat=chats.find(c=>c.id!==chat.id&&!c.archived)?.id||null;}save().then(()=>{if(!activeChat)makeChat();else render();});});
+      const del=document.createElement("button");del.type="button";del.textContent="×";del.title="Löschen";del.setAttribute("aria-label","Chat löschen");del.addEventListener("click",()=>{if(!confirm("Diesen Chat wirklich löschen?"))return;chats=chats.filter(c=>c.id!==chat.id);if(activeChat===chat.id)activeChat=chats.find(c=>!c.archived)?.id||null;save().then(()=>{if(!activeChat)makeChat();else render();});});
+      actions.append(rename,archive,del);item.append(title,actions);host.append(item);
+    });
+  }
   function render() {
     const host = $("#messages"); host.replaceChildren();
     const chat = current();
@@ -59,6 +74,7 @@
       welcome.append(orb, heading, p); host.append(welcome);
     } else chat.messages.forEach(m => bubble(m.role, m.content));
     $("#chatTitle").textContent = chat?.title || "AKHI AI";
+    renderChatList();
   }
   function makeChat() {
     const chat = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()};
@@ -136,10 +152,13 @@
     chats = (await get("chats")) || [];
     activeChat = (await get("activeChat")) || null;
     if (!chats.length) { const first = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()}; chats=[first]; activeChat=first.id; }
-    if (!chats.some(c => c.id === activeChat)) activeChat = chats[0].id;
+    if (!chats.some(c => c.id === activeChat && !c.archived)) activeChat = chats.find(c=>!c.archived)?.id || null;
+    if(!activeChat){const first={id:id(),title:"Neuer Chat",messages:[],created:Date.now()};chats.unshift(first);activeChat=first.id;}
     $("#sendBtn").addEventListener("click", send);
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
+    $("#newChatBtn").addEventListener("click", makeChat);
+    $("#chatSearch").addEventListener("input", renderChatList);
     $("#akhiNewChat")?.addEventListener("click", makeChat);
     await save(); render();
   }
