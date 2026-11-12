@@ -1,0 +1,9 @@
+{
+  "name": "AKHI AI",
+  "short_name": "AKHI AI",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090a0e",
+  "theme_color": "#090a0e",
+  "icons": []
+}
