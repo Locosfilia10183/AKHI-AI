@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="description" content="AKHI AI – dein persönlicher KI-Assistent.">
   <title>AKHI AI</title>
-  <link rel="stylesheet" href="./style.css?v=6">
+  <link rel="stylesheet" href="./style.css?v=7">
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then(items => items.forEach(item => item.unregister())).catch(() => {});
@@ -17,7 +17,8 @@
   </script>
 </head>
 <body>
-  <div class="app">
+  <section class="auth-gate" id="authGate"><div class="auth-card"><div class="auth-logo">A</div><div class="auth-kicker">DEIN PERSÖNLICHER KI-ASSISTENT</div><h1>Willkommen bei <span>AKHI AI</span></h1><p>Melde dich an, um dein persönliches Konto zu nutzen.</p><button class="oauth-button google" id="googleLogin" type="button"><span class="google-g">G</span> Mit Google fortfahren</button><button class="oauth-button apple" id="appleLogin" type="button"><span class="apple-mark">●</span> Mit Apple fortfahren</button><div id="authMessage" class="auth-message" role="status">Sichere Anmeldung über Supabase</div><small>Deine Anmeldung wird sicher über Supabase verarbeitet.</small></div></section>
+  <div class="app" id="mainApp">
     <header class="topbar">
       <button class="menu-trigger" id="menuToggle" type="button" aria-label="Chat-Menü öffnen" aria-expanded="false" title="Chats öffnen"><span></span><span></span><span></span></button>
       <a class="brand" href="/" aria-label="AKHI AI Startseite">
@@ -68,11 +69,12 @@
       <label class="setting-row"><span><b>Größere Schrift</b><small>Chat-Nachrichten besser lesbar machen</small></span><input id="settingLargeText" type="checkbox"></label>
       <label class="setting-row"><span><b>Enter zum Senden</b><small>Mit Enter senden, mit Shift + Enter neue Zeile</small></span><input id="settingEnter" type="checkbox" checked></label>
       <div class="setting-info"><span class="online-dot checking" id="settingsStatusDot"></span><span id="settingsStatus">Verbindungsstatus wird geladen …</span></div>
-      <div class="memory-panel"><div class="memory-heading"><b>🧠 AKHI-Gedächtnis</b><span id="memoryCount">0 Erinnerungen</span></div><p>Wichtige Informationen aus deinen Gesprächen gelten auch in neuen Chats.</p><div id="memoryList" class="memory-list"></div><button class="memory-clear" id="clearMemory" type="button">Gedächtnis löschen</button></div><button class="settings-danger" id="clearHistory" type="button">Chatverlauf löschen</button>
+      <div class="memory-panel"><div class="memory-heading"><b>🧠 AKHI-Gedächtnis</b><span id="memoryCount">0 Erinnerungen</span></div><p>Wichtige Informationen aus deinen Gesprächen gelten auch in neuen Chats.</p><div id="memoryList" class="memory-list"></div><button class="memory-clear" id="clearMemory" type="button">Gedächtnis löschen</button></div><div class="account-row"><span id="accountEmail">Nicht angemeldet</span><button id="signOutBtn" type="button">Abmelden</button></div><button class="settings-danger" id="clearHistory" type="button">Chatverlauf löschen</button>
     </div>
   </section>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./connection-monitor.js?v=1" defer></script>
-  <script src="./app.js?v=6" defer></script>
+  <script src="./app.js?v=7" defer></script>
 </body>
 </html>
