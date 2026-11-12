@@ -10,7 +10,7 @@
   const SUPABASE_URL = "https://jeubdegyactnxjpperkr.supabase.co";
   const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
   let supabaseClient = null, authSession = null, userId = null;
-  const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
+  const INTRO = "Ich bin AKHI AI – dein persönlicher Assistent. Ich helfe dir beim Denken, Lernen, Programmieren, Planen und Recherchieren. Schreib einfach los.";
   let db, chats = [], activeChat = null, sending = false, memories = [], attachments = [], lastAssistantText = "", assistants = [], activeAssistant = null;
 
   function openDB() {
@@ -44,13 +44,13 @@
     if (supabaseClient && userId) {
       const rows=chats.map(c=>({user_id:userId,id:c.id,title:c.title||"Neuer Chat",messages:c.messages||[],archived:!!c.archived,created_at:new Date(c.created||Date.now()).toISOString(),updated_at:new Date().toISOString()}));
       const {error}=await supabaseClient.from("akhi_chats").upsert(rows,{onConflict:"user_id,id"});
-      if(error) console.warn("Cloud-Chat-Sync:",error.message);
+      if(error) console.warn("Synchronisierung der Chats:",error.message);
       else { const ids=chats.map(c=>c.id); const cleanup=ids.length ? await supabaseClient.from("akhi_chats").delete().not("id","in","("+ids.map(x=>`"${String(x).replace(/"/g,"")}"`).join(",")+")") : await supabaseClient.from("akhi_chats").delete().neq("id",""); if(cleanup.error) console.warn("Cloud-Chat-Cleanup:",cleanup.error.message); }
     }
   }
   async function saveAssistants(){await put(userKey("assistants"),assistants);renderAssistants();}\n  function renderAssistants(){const host=$("#assistantList");if(!host)return;host.replaceChildren();assistants.forEach((a,i)=>{const row=document.createElement("div");row.className="memory-item";const label=document.createElement("span");label.textContent=a.name+(activeAssistant===a.id?" ✓":"");const use=document.createElement("button");use.type="button";use.textContent=activeAssistant===a.id?"Aktiv":"Nutzen";use.onclick=()=>{activeAssistant=activeAssistant===a.id?null:a.id;renderAssistants();toast(activeAssistant?"Assistent aktiviert":"Standard-Assistent aktiv");};const del=document.createElement("button");del.type="button";del.textContent="×";del.onclick=async()=>{assistants.splice(i,1);if(activeAssistant===a.id)activeAssistant=null;await saveAssistants();};row.append(label,use,del);host.append(row);});}\n  async function saveMemory() {
     await put(userKey("memory"), memories); renderMemory();
-    if(supabaseClient&&userId){const {error}=await supabaseClient.from("akhi_memories").upsert({user_id:userId,memories,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)console.warn("Cloud-Memory-Sync:",error.message);}
+    if(supabaseClient&&userId){const {error}=await supabaseClient.from("akhi_memories").upsert({user_id:userId,memories,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)console.warn("Synchronisierung des Gedächtnisses:",error.message);}
   }
   async function loadCloudData() {
     const [chatResult,memoryResult]=await Promise.all([
