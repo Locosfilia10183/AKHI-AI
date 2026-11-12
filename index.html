@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="AKHI AI – dein persönlicher KI-Assistent.">
+  <title>AKHI AI</title>
+  <link rel="stylesheet" href="./style.css?v=4">
+  <script>
+    // Alte fehlerhafte Offline-Caches entfernen, damit immer die aktuelle Oberfläche lädt.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations()
+        .then(items => items.forEach(item => item.unregister()))
+        .catch(() => {});
+    }
+    if ("caches" in window) {
+      caches.keys().then(keys => keys
+        .filter(key => key.startsWith("akhi-ai"))
+        .forEach(key => caches.delete(key))).catch(() => {});
+    }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="AKHI AI Startseite">
+        <span class="brand-mark">A</span>
+        <span>AKHI <b>AI</b></span>
+      </a>
+      <div class="topbar-right">
+        <span class="online-dot"></span>
+        <span class="online-label">Dein KI-Assistent</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="page" id="page-chat" aria-label="Chat mit AKHI AI">
+        <div class="chat-layout">
+          <div class="chat-head">
+            <div class="eyebrow"><span class="eyebrow-line"></span> DEIN PERSÖNLICHER ASSISTENT</div>
+            <h1 id="chatTitle">AKHI AI</h1>
+            <p>Abi, sag mir einfach, wobei ich dir helfen soll.</p>
+          </div>
+
+          <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions text">
+            <div class="welcome">
+              <div class="orb">✧</div>
+              <h2>Hallo, Abi!</h2>
+              <p>Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?</p>
+            </div>
+          </div>
+
+          <div class="composer-wrap">
+            <div class="composer">
+              <textarea id="prompt" rows="1" maxlength="12000" placeholder="Schreib AKHI AI eine Nachricht …" aria-label="Deine Nachricht"></textarea>
+              <button id="sendBtn" type="button" aria-label="Nachricht senden" title="Senden">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+            <div class="composer-meta">
+              <span>Enter zum Senden · Shift + Enter für neue Zeile</span>
+              <span>AKHI AI kann Fehler machen.</span>
+            </div>
+          </div>
+          <div class="fineprint">AKHI AI · Verbunden über dein sicheres Backend.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js?v=4" defer></script>
+</body>
+</html>
