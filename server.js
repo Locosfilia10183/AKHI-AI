@@ -55,7 +55,7 @@ const server = http.createServer(async (req, res) => {
       try { const parsed=JSON.parse(rawMemory.replace(/^\s*```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"")); return send(res,200,{memory:Array.isArray(parsed.memory)?parsed.memory.filter(x=>typeof x==="string").slice(0,40):memory}); }
       catch { return send(res,200,{memory}); }
     }
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions",
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method:"POST",
       headers:{
         "Authorization":`Bearer ${API_KEY}`,
