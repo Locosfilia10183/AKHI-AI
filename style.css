@@ -61,3 +61,36 @@ body.sidebar-open .chat-sidebar{transform:translateX(0)}body.sidebar-open .sideb
 .composer-tools{display:flex;align-items:center;gap:7px;margin:0 0 8px;flex-wrap:wrap}.composer-tools button,.composer-tools select,.attachment-preview button{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--panel2);color:var(--gold);font-size:11px}.composer-tools select{max-width:145px}.attachment-preview{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 7px}.attachment-preview button{color:var(--text);max-width:100%;overflow-wrap:anywhere}@media(max-width:600px){.composer-tools button,.composer-tools select{padding:7px 8px;font-size:10px}}
 
 .auth-field{display:block;margin:12px 0 0;color:var(--muted);font-size:12px;text-align:left}.auth-field input{display:block;width:100%;margin-top:6px;padding:13px 14px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--text);outline:none}.auth-field input:focus{border-color:var(--gold)}
+
+
+/* AKHI AI – visuelle Überarbeitung */
+:root{--gold:#b9a6ff;--gold2:#d6ccff;--accent:#8b75ee;--panel:#15151d;--panel2:#1d1c28;--line:#302d3d}
+body{background:#0d0d12}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(139,117,238,.13),transparent 52%);z-index:0}
+.topbar,.main,.settings-overlay,.toast{position:relative;z-index:1}
+.topbar{height:64px;flex-basis:64px;padding-inline:clamp(14px,3vw,34px);background:rgba(13,13,18,.88);border-bottom:1px solid rgba(255,255,255,.06)}
+.brand{letter-spacing:-.025em;font-size:16px}.brand-mark{border-radius:12px;background:linear-gradient(145deg,#b9a6ff,#7862d7);border:0;color:#171321;box-shadow:0 5px 22px #8b75ee33}
+.menu-trigger,.settings-trigger{background:#191822;border-color:#343044;color:#c9bdff;border-radius:12px}
+.chat-layout{width:min(980px,100%);height:calc(100dvh - 64px);padding-top:clamp(26px,5vh,54px)}
+.chat-head h1{font-size:clamp(32px,5vw,48px);letter-spacing:-.06em}
+.chat-head p{font-size:14px}
+.eyebrow{color:#b9a6ff;letter-spacing:.16em}
+.orb{width:64px;height:64px;border-radius:22px;background:linear-gradient(145deg,#c9bdff,#8069df);color:#171321;box-shadow:0 12px 42px #8b75ee30}
+.welcome{max-width:620px}.welcome h2{font-size:27px;letter-spacing:-.04em}.welcome p{font-size:14px;line-height:1.85;color:#a9a5b7}
+.bubble{background:#171720;border-color:#302d3d;border-radius:6px 17px 17px 17px;padding:13px 16px}
+.message.user .bubble{background:#28223a;border-color:#50436f;border-radius:17px 6px 17px 17px}
+.avatar{background:#242132;color:#c9bdff;border-radius:11px}
+.message.user .avatar{background:#3a3155;color:#e1d9ff}
+.composer{background:#171720;border:1px solid #373247;border-radius:20px;padding:11px 12px 11px 18px;box-shadow:0 16px 55px #0005}
+.composer:focus-within{border-color:#9a87ed;box-shadow:0 0 0 3px #8b75ee18,0 16px 55px #0005}
+#sendBtn{background:linear-gradient(145deg,#c9bdff,#927be8);color:#171321;border-radius:14px}
+.composer textarea{font-size:15px}
+.composer-meta{font-size:10px;color:#777387}
+.chat-sidebar{background:#111118!important;border-right-color:#292635}
+.chat-item.active{background:#252137;border-color:#40375b}
+.chat-item.active .chat-item-title{color:#eeeaff}
+.chat-search{background:#171720;border-color:#302d3d}
+.settings-panel{border-color:#373247;background:#15151d;border-radius:22px}
+.settings-close{border-radius:12px}
+.memory-clear{background:#28223a!important;color:#d6ccff!important;border-color:#4b4168!important}
+@media(max-width:700px){.chat-layout{height:calc(100dvh - 58px);padding:24px 14px 8px}.chat-head{padding-bottom:12px}.topbar{height:58px;flex-basis:58px}}
