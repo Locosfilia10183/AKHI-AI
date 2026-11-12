@@ -26,7 +26,7 @@ const server = http.createServer(async (req, res) => {
   if (origin && origin !== ALLOWED_ORIGIN) return send(res,403,{error:"Origin nicht erlaubt"});
   const ip = req.socket.remoteAddress || "unknown";
   const now = Date.now(), recent = (hits.get(ip)||[]).filter(t=>now-t<60000);
-  if (recent.length >= 12) return send(res,429,{error:"Zu viele Anfragen. Bitte kurz warten."});
+  if (recent.length >= 24) return send(res,429,{error:"Zu viele Anfragen. Bitte kurz warten."});
   recent.push(now); hits.set(ip,recent);
   if (!API_KEY) return send(res,503,{error:"OPENROUTER_API_KEY fehlt im Backend."});
   let raw = "";
@@ -40,7 +40,7 @@ const server = http.createServer(async (req, res) => {
     const safe = messages.slice(-20)
       .filter(m=>m && ["user","assistant"].includes(m.role) && typeof m.content==="string")
       .map(m=>({role:m.role,content:m.content.slice(0,12000)}));
-    if (!safe.length || safe.at(-1).role !== "user")
+    if (url.pathname === "/api/chat" && (!safe.length || safe.at(-1).role !== "user"))
       return send(res,400,{error:"Keine gültige Nutzernachricht erhalten."});
     const memory = Array.isArray(input.memory) ? input.memory.filter(x=>typeof x==="string").slice(0,40).map(x=>x.slice(0,500)) : [];
     if (url.pathname === "/api/memory") {
