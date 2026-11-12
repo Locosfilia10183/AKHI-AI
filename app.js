@@ -80,7 +80,13 @@
     row.className = "message" + (role === "user" ? " user" : "");
     const avatar = document.createElement("div");
     avatar.className = "avatar"; avatar.textContent = role === "user" ? "Du" : "A";
-    const body = document.createElement("div"); body.className = "bubble"; body.textContent = content;
+    const body = document.createElement("div"); body.className = "bubble";
+    if(typeof content==="string" && content.startsWith("AKHI_IMAGE:")){
+      const url=content.slice(11);
+      const image=document.createElement("img");image.src=url;image.alt="Von AKHI AI generiertes Bild";image.loading="lazy";image.style.cssText="display:block;width:100%;max-width:520px;border-radius:14px;margin-top:6px";
+      const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener";link.textContent="Bild öffnen / speichern";link.style.cssText="display:inline-block;margin-top:8px;color:#d8b46a";
+      body.append(image,link);
+    } else body.textContent = content;
     row.append(avatar, body); host.append(row); host.scrollTop = host.scrollHeight;
     return body;
   }
@@ -189,6 +195,21 @@
     sending = true; $("#sendBtn").disabled = true;
     const pending = bubble("assistant", "Abi, einen Moment …");
     try {
+      const wantsImage=/\\b(bild|bilder|illustration|illustr[iy]ere|zeichne|zeichnen|generier(?:e|en)?|erstelle(?:n)?|male|malen|entwirf)\\b/i.test(text) && /\\b(bild|bilder|illustration|illustr[iy]ere|zeichne|zeichnen|generier(?:e|en)?|erstelle(?:n)?|male|malen|entwirf)\\b/i.test(text);
+      if(wantsImage){
+        pending.textContent="Ich erstelle dein Bild …";
+        const imageResponse=await fetch(BACKEND+"/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text})});
+        const imageData=await imageResponse.json().catch(()=>({}));
+        if(!imageResponse.ok)throw new Error(imageData.error||"Bild konnte nicht erstellt werden.");
+        const imageMessage="AKHI_IMAGE:"+imageData.imageUrl;
+        pending.remove();
+        bubble("assistant",imageMessage);
+        chat.messages.push({role:"assistant",content:imageMessage});
+        lastAssistantText="Dein Bild wurde erstellt.";
+        attachments=[];drawAttachments();
+        await updateMemory(chat);
+        return;
+      }
       const response = await fetch(BACKEND + "/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments})
