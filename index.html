@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="description" content="AKHI AI – dein persönlicher KI-Assistent.">
   <title>AKHI AI</title>
-  <link rel="stylesheet" href="./style.css?v=10">
+  <link rel="stylesheet" href="./style.css?v=11">
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then(items => items.forEach(item => item.unregister())).catch(() => {});
@@ -17,7 +17,7 @@
   </script>
 </head>
 <body>
-  <section class="auth-gate" id="authGate"><div class="auth-card"><div class="auth-logo">A</div><div class="auth-kicker">DEIN PERSÖNLICHER KI-ASSISTENT</div><h1>Willkommen bei <span>AKHI AI</span></h1><p>Melde dich an, um dein persönliches Konto zu nutzen.</p><button class="oauth-button google" id="googleLogin" type="button"><span class="google-g">G</span> Mit Google fortfahren</button><button class="oauth-button apple" id="appleLogin" type="button"><span class="apple-mark">●</span> Mit Apple fortfahren</button><div id="authMessage" class="auth-message" role="status">Sichere Anmeldung über Supabase</div><small>Deine Anmeldung wird sicher über Supabase verarbeitet.</small></div></section>
+  <section class="auth-gate" id="authGate"><div class="auth-card"><div class="auth-logo">A</div><div class="auth-kicker">DEIN PERSÖNLICHER KI-ASSISTENT</div><h1>Willkommen bei <span>AKHI AI</span></h1><p>Melde dich an, um dein persönliches Konto zu nutzen.</p><label class="auth-field">E-Mail-Adresse<input id="authEmail" type="email" autocomplete="email" placeholder="name@beispiel.de"></label><label class="auth-field">Passwort<input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mindestens 8 Zeichen"></label><button class="oauth-button google" id="emailSignup" type="button">Kostenloses Konto erstellen</button><button class="oauth-button apple" id="emailLogin" type="button">Mit E-Mail anmelden</button><button class="oauth-button google" id="googleLogin" type="button"><span class="google-g">G</span> Mit Google fortfahren</button><button class="oauth-button apple" id="appleLogin" type="button"><span class="apple-mark">●</span> Mit Apple fortfahren</button><div id="authMessage" class="auth-message" role="status">Sichere Anmeldung über Supabase</div><small>Deine Anmeldung wird sicher über Supabase verarbeitet.</small></div></section>
   <div class="app" id="mainApp">
     <header class="topbar">
       <button class="menu-trigger" id="menuToggle" type="button" aria-label="Chat-Menü öffnen" aria-expanded="false" title="Chats öffnen"><span></span><span></span><span></span></button>
@@ -81,6 +81,6 @@
   <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
   <script src="./connection-monitor.js?v=1" defer></script>
-  <script src="./app.js?v=10" defer></script>
+  <script src="./app.js?v=11" defer></script>
 </body>
 </html>
