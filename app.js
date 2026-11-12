@@ -38,7 +38,7 @@
   async function save() { await put("chats", chats); await put("activeChat", activeChat); }
   async function saveMemory() { await put("memory", memories); renderMemory(); }
   function renderMemory() { const host=$("#memoryList"); if(!host)return; host.replaceChildren(); $("#memoryCount").textContent=memories.length+" Erinnerungen"; if(!memories.length){const p=document.createElement("p");p.className="memory-empty";p.textContent="Noch keine Erinnerungen gespeichert.";host.append(p);return;} memories.forEach((item,index)=>{const row=document.createElement("div");row.className="memory-item";const span=document.createElement("span");span.textContent=item;const del=document.createElement("button");del.type="button";del.textContent="×";del.addEventListener("click",async()=>{memories.splice(index,1);await saveMemory();});row.append(span,del);host.append(row);}); }
-  async function updateMemory(chat) { try { const r=await fetch(BACKEND+"/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({memory:memories,messages:chat.messages.slice(-16)})}); if(!r.ok)return; const d=await r.json(); if(Array.isArray(d.memory)){memories=d.memory.filter(x=>typeof x==="string").slice(0,40);await saveMemory();} } catch(e) { console.warn("Memory update failed",e); } }
+  async function updateMemory(chat) { try { const r=await fetch(BACKEND+"/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({memory:memories,conversations:chats.filter(c=>!c.archived).slice(0,40).map(c=>({title:c.title||"Chat",messages:(c.messages||[]).slice(-40)}))})}); if(!r.ok)return; const d=await r.json(); if(Array.isArray(d.memory)){memories=d.memory.filter(x=>typeof x==="string").slice(0,40);await saveMemory();} } catch(e) { console.warn("Memory update failed",e); } }
 
   function bubble(role, content) {
     const host = $("#messages");
@@ -174,6 +174,7 @@
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
     renderMemory();
+    updateMemory(current()).catch(()=>{});
     setupSidebar();
     $("#newChatBtn").addEventListener("click", makeChat);
     $("#chatSearch").addEventListener("input", renderChatList);
