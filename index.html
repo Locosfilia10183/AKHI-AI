@@ -19,6 +19,7 @@
 <body>
   <div class="app">
     <header class="topbar">
+      <button class="menu-trigger" id="menuToggle" type="button" aria-label="Chat-Menü öffnen" aria-expanded="false" title="Chats öffnen"><span></span><span></span><span></span></button>
       <a class="brand" href="/" aria-label="AKHI AI Startseite">
         <span class="brand-mark">A</span>
         <span>AKHI <b>AI</b></span>
@@ -30,6 +31,7 @@
       </div>
     </header>
     <main class="main">
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
       <aside class="chat-sidebar" id="chatSidebar" aria-label="Chat-Verlauf">
         <div class="sidebar-top"><b>Deine Chats</b><button id="newChatBtn" type="button" aria-label="Neuen Chat erstellen">＋</button></div>
         <input id="chatSearch" class="chat-search" type="search" placeholder="Chats suchen …" aria-label="Chats suchen">
