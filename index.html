@@ -26,6 +26,7 @@
       <div class="topbar-right">
         <span class="online-dot checking" id="connectionDot"></span>
         <span class="online-label" id="connectionLabel">Verbinde mit AKHI AI …</span>
+        <button class="settings-trigger" id="settingsOpen" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
       </div>
     </header>
     <main class="main">
@@ -53,6 +54,16 @@
       </section>
     </main>
   </div>
+  <section class="settings-overlay" id="settingsOverlay" aria-hidden="true">
+    <div class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-heading"><div><span class="eyebrow">AKHI AI</span><h2 id="settingsTitle">Einstellungen</h2></div><button id="settingsClose" class="settings-close" type="button" aria-label="Schließen">×</button></div>
+      <label class="setting-row"><span><b>Helles Design</b><small>Zwischen dunklem und hellem Design wechseln</small></span><input id="settingLight" type="checkbox"></label>
+      <label class="setting-row"><span><b>Größere Schrift</b><small>Chat-Nachrichten besser lesbar machen</small></span><input id="settingLargeText" type="checkbox"></label>
+      <label class="setting-row"><span><b>Enter zum Senden</b><small>Mit Enter senden, mit Shift + Enter neue Zeile</small></span><input id="settingEnter" type="checkbox" checked></label>
+      <div class="setting-info"><span class="online-dot checking" id="settingsStatusDot"></span><span id="settingsStatus">Verbindungsstatus wird geladen …</span></div>
+      <button class="settings-danger" id="clearHistory" type="button">Chatverlauf löschen</button>
+    </div>
+  </section>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./connection-monitor.js?v=1" defer></script>
   <script src="./app.js?v=5" defer></script>
