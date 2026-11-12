@@ -195,7 +195,7 @@
     sending = true; $("#sendBtn").disabled = true;
     const pending = bubble("assistant", "Abi, einen Moment …");
     try {
-      const wantsImage=/\\b(bild|bilder|illustration|illustr[iy]ere|zeichne|zeichnen|generier(?:e|en)?|erstelle(?:n)?|male|malen|entwirf)\\b/i.test(text) && /\\b(bild|bilder|illustration|illustr[iy]ere|zeichne|zeichnen|generier(?:e|en)?|erstelle(?:n)?|male|malen|entwirf)\\b/i.test(text);
+      const wantsImage = /\b(bild|bilder|foto|illustration|zeichnung|logo|poster|wallpaper|hintergrundbild)\b/i.test(text) || /\b(zeichne|male|visualisiere|generiere|erstelle|mach)\b.{0,50}\b(bild|foto|illustration|logo|poster|wallpaper)\b/i.test(text);
       if(wantsImage){
         pending.textContent="Ich erstelle dein Bild …";
         const imageResponse=await fetch(BACKEND+"/api/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text})});
