@@ -37,6 +37,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const input = JSON.parse(raw || "{}");
     const messages = Array.isArray(input.messages) ? input.messages : [];
+    const conversations = Array.isArray(input.conversations) ? input.conversations.slice(0,40) : [];
     const safe = messages.slice(-20)
       .filter(m=>m && ["user","assistant"].includes(m.role) && typeof m.content==="string")
       .map(m=>({role:m.role,content:m.content.slice(0,12000)}));
@@ -46,7 +47,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/memory") {
       const extraction = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method:"POST", headers:{"Authorization":"Bearer "+API_KEY,"Content-Type":"application/json","HTTP-Referer":"https://akhi-ai.onrender.com","X-OpenRouter-Title":"AKHI AI Memory"},
-        body:JSON.stringify({model:MODEL,temperature:0,messages:[{role:"system",content:"Aktualisiere das Langzeitgedächtnis anhand des Gesprächs. Speichere nur nützliche längerfristige Fakten, Vorlieben, Ziele, Projekte und ausdrücklich gewünschte Erinnerungen. Keine Passwörter, API-Schlüssel, Tokens, Zahlungsdaten oder Geheimnisse. Vermeide sensible Gesundheits-, politische, religiöse oder intime Details. Erfinde nichts, fasse Duplikate zusammen. Antworte ausschließlich als JSON-Objekt mit Array-Feld memory, maximal 40 kurze Einträge."},{role:"user",content:JSON.stringify({existing_memory:memory,conversation:safe})}]})
+        body:JSON.stringify({model:MODEL,temperature:0,messages:[{role:"system",content:"Aktualisiere das Langzeitgedächtnis anhand des Gesprächs. Speichere nur nützliche längerfristige Fakten, Vorlieben, Ziele, Projekte und ausdrücklich gewünschte Erinnerungen. Keine Passwörter, API-Schlüssel, Tokens, Zahlungsdaten oder Geheimnisse. Vermeide sensible Gesundheits-, politische, religiöse oder intime Details. Erfinde nichts, fasse Duplikate zusammen. Antworte ausschließlich als JSON-Objekt mit Array-Feld memory, maximal 40 kurze Einträge."},{role:"user",content:JSON.stringify({existing_memory:memory,conversation:conversations.length ? conversations.map(c=>({title:String(c.title||"Chat").slice(0,100),messages:Array.isArray(c.messages)?c.messages.slice(-40).filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").map(m=>({role:m.role,content:m.content.slice(0,4000)})):[]})) : safe})}]})
       });
       const extracted=await extraction.json().catch(()=>({}));
       if(!extraction.ok)return send(res,extraction.status,{error:extracted.error?.message||"Gedächtnis-Update fehlgeschlagen"});
