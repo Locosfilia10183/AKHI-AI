@@ -11,7 +11,7 @@
   const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
   let supabaseClient = null, authSession = null, userId = null;
   const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
-  let db, chats = [], activeChat = null, sending = false, memories = [], attachments = [], lastAssistantText = "";
+  let db, chats = [], activeChat = null, sending = false, memories = [], attachments = [], lastAssistantText = "", assistants = [], activeAssistant = null;
 
   function openDB() {
     return new Promise((resolve, reject) => {
@@ -48,7 +48,7 @@
       else { const ids=chats.map(c=>c.id); const cleanup=ids.length ? await supabaseClient.from("akhi_chats").delete().not("id","in","("+ids.map(x=>`"${String(x).replace(/"/g,"")}"`).join(",")+")") : await supabaseClient.from("akhi_chats").delete().neq("id",""); if(cleanup.error) console.warn("Cloud-Chat-Cleanup:",cleanup.error.message); }
     }
   }
-  async function saveMemory() {
+  async function saveAssistants(){await put(userKey("assistants"),assistants);renderAssistants();}\n  function renderAssistants(){const host=$("#assistantList");if(!host)return;host.replaceChildren();assistants.forEach((a,i)=>{const row=document.createElement("div");row.className="memory-item";const label=document.createElement("span");label.textContent=a.name+(activeAssistant===a.id?" ✓":"");const use=document.createElement("button");use.type="button";use.textContent=activeAssistant===a.id?"Aktiv":"Nutzen";use.onclick=()=>{activeAssistant=activeAssistant===a.id?null:a.id;renderAssistants();toast(activeAssistant?"Assistent aktiviert":"Standard-Assistent aktiv");};const del=document.createElement("button");del.type="button";del.textContent="×";del.onclick=async()=>{assistants.splice(i,1);if(activeAssistant===a.id)activeAssistant=null;await saveAssistants();};row.append(label,use,del);host.append(row);});}\n  async function saveMemory() {
     await put(userKey("memory"), memories); renderMemory();
     if(supabaseClient&&userId){const {error}=await supabaseClient.from("akhi_memories").upsert({user_id:userId,memories,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)console.warn("Cloud-Memory-Sync:",error.message);}
   }
@@ -132,8 +132,8 @@
     const chat = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()};
     chats.unshift(chat); activeChat = chat.id; save().then(render); $("#prompt").focus();
   }
-  function downloadCode(target, answer) {
-    const exportBtn=document.createElement("button"); exportBtn.type="button"; exportBtn.textContent="↓ Antwort als Markdown speichern"; exportBtn.style.cssText="display:block;margin-top:10px;padding:9px 12px;border:1px solid #b99a5b;border-radius:9px;background:transparent;color:inherit;font-weight:700"; exportBtn.addEventListener("click",()=>{const url=URL.createObjectURL(new Blob([answer],{type:"text/markdown;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="akhi-antwort.md";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}); target.append(exportBtn);
+  function exportDocument(format, answer){const clean=answer.replace(/```/g,"");const saveBlob=(blob,name)=>{const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);};try{if(format==="txt"||format==="md"){saveBlob(new Blob([answer],{type:"text/plain;charset=utf-8"}),"akhi-antwort."+(format==="md"?"md":"txt"));}else if(format==="xlsx"){const wb=XLSX.utils.book_new();const rows=clean.split("\n").map(line=>[line]);XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"AKHI AI");XLSX.writeFile(wb,"akhi-antwort.xlsx");}else if(format==="pdf"){const {jsPDF}=window.jspdf;const pdf=new jsPDF();const lines=pdf.splitTextToSize(clean,180);let y=18;for(const line of lines){if(y>280){pdf.addPage();y=18;}pdf.text(line,15,y);y+=7;}pdf.save("akhi-antwort.pdf");}else if(format==="docx"){const {Document,Packer,Paragraph}=window.docx;const doc=new Document({sections:[{children:clean.split("\n").map(line=>new Paragraph(line))}]});Packer.toBlob(doc).then(blob=>saveBlob(blob,"akhi-antwort.docx"));}else if(format==="pptx"){const pptx=new pptxgen();pptx.layout="LAYOUT_WIDE";const chunks=clean.split("\n").filter(Boolean);for(let i=0;i<chunks.length;i+=6){const slide=pptx.addSlide();slide.addText(chunks.slice(i,i+6).join("\n"),{x:.6,y:.6,w:11.8,h:6.1,fontSize:20,breakLine:false,color:"222222",margin:.2});}pptx.writeFile({fileName:"akhi-praesentation.pptx"});}}catch(e){toast("Export nicht verfügbar: "+e.message);}}\n  function downloadCode(target, answer) {
+    const exportBar=document.createElement("div");exportBar.style.cssText="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px";[["PDF","pdf"],["Word","docx"],["Excel","xlsx"],["PowerPoint","pptx"],["TXT","txt"]].forEach(([label,fmt])=>{const b=document.createElement("button");b.type="button";b.textContent="↓ "+label;b.style.cssText="padding:7px 10px;border:1px solid #b99a5b;border-radius:9px;background:transparent;color:inherit;font-size:12px";b.onclick=()=>exportDocument(fmt,answer);exportBar.append(b);});target.append(exportBar);\n    const exportBtn=document.createElement("button"); exportBtn.type="button"; exportBtn.textContent="↓ Antwort als Markdown speichern"; exportBtn.style.cssText="display:block;margin-top:10px;padding:9px 12px;border:1px solid #b99a5b;border-radius:9px;background:transparent;color:inherit;font-weight:700"; exportBtn.addEventListener("click",()=>{const url=URL.createObjectURL(new Blob([answer],{type:"text/markdown;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="akhi-antwort.md";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}); target.append(exportBtn);
     const blocks = [...answer.matchAll(/```([^\n`]*)\n([\s\S]*?)```/g)];
     blocks.forEach((match, i) => {
       const lang = (match[1].trim().split(/\s+/)[0] || "txt").toLowerCase();
@@ -212,7 +212,7 @@
       }
       const response = await fetch(BACKEND + "/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments})
+        body:JSON.stringify({messages:chat.messages.slice(-20),memory:memories,attachments,assistant:assistants.find(a=>a.id===activeAssistant)||null})
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Serverfehler (${response.status})`);
