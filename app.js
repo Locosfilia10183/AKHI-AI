@@ -45,6 +45,7 @@
       const rows=chats.map(c=>({user_id:userId,id:c.id,title:c.title||"Neuer Chat",messages:c.messages||[],archived:!!c.archived,created_at:new Date(c.created||Date.now()).toISOString(),updated_at:new Date().toISOString()}));
       const {error}=await supabaseClient.from("akhi_chats").upsert(rows,{onConflict:"user_id,id"});
       if(error) console.warn("Cloud-Chat-Sync:",error.message);
+      else { const ids=chats.map(c=>c.id); const cleanup=ids.length ? await supabaseClient.from("akhi_chats").delete().not("id","in","("+ids.map(x=>`"${String(x).replace(/"/g,"")}"`).join(",")+")") : await supabaseClient.from("akhi_chats").delete().neq("id",""); if(cleanup.error) console.warn("Cloud-Chat-Cleanup:",cleanup.error.message); }
     }
   }
   async function saveMemory() {
@@ -126,6 +127,7 @@
     chats.unshift(chat); activeChat = chat.id; save().then(render); $("#prompt").focus();
   }
   function downloadCode(target, answer) {
+    const exportBtn=document.createElement("button"); exportBtn.type="button"; exportBtn.textContent="↓ Antwort als Markdown speichern"; exportBtn.style.cssText="display:block;margin-top:10px;padding:9px 12px;border:1px solid #b99a5b;border-radius:9px;background:transparent;color:inherit;font-weight:700"; exportBtn.addEventListener("click",()=>{const url=URL.createObjectURL(new Blob([answer],{type:"text/markdown;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="akhi-antwort.md";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}); target.append(exportBtn);
     const blocks = [...answer.matchAll(/```([^\n`]*)\n([\s\S]*?)```/g)];
     blocks.forEach((match, i) => {
       const lang = (match[1].trim().split(/\s+/)[0] || "txt").toLowerCase();
