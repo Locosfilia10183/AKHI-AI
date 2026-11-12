@@ -112,6 +112,25 @@
       $("#messages").scrollTop = $("#messages").scrollHeight;
     }
   }
+  function toast(message) { const el = $("#toast"); el.textContent = message; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2400); }
+  function setupSettings() {
+    const overlay = $("#settingsOverlay");
+    const open = () => { overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); };
+    const close = () => { overlay.classList.remove("open"); overlay.setAttribute("aria-hidden","true"); };
+    $("#settingsOpen").addEventListener("click", open); $("#settingsClose").addEventListener("click", close);
+    overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    const light = $("#settingLight"), large = $("#settingLargeText"), enter = $("#settingEnter");
+    light.checked = localStorage.getItem("akhi-light") === "1"; large.checked = localStorage.getItem("akhi-large-text") === "1"; enter.checked = localStorage.getItem("akhi-enter-send") !== "0";
+    document.body.classList.toggle("light-theme", light.checked); document.body.classList.toggle("large-chat", large.checked);
+    light.addEventListener("change", () => { localStorage.setItem("akhi-light", light.checked ? "1" : "0"); document.body.classList.toggle("light-theme", light.checked); });
+    large.addEventListener("change", () => { localStorage.setItem("akhi-large-text", large.checked ? "1" : "0"); document.body.classList.toggle("large-chat", large.checked); });
+    enter.addEventListener("change", () => localStorage.setItem("akhi-enter-send", enter.checked ? "1" : "0"));
+    $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") === "0") e.stopImmediatePropagation(); }, true);
+    $("#clearHistory").addEventListener("click", async () => { if (!confirm("Möchtest du wirklich deinen gesamten lokalen Chatverlauf löschen?")) return; chats=[]; const fresh={id:id(),title:"Neuer Chat",messages:[],created:Date.now()}; chats=[fresh]; activeChat=fresh.id; await save(); render(); close(); toast("Chatverlauf wurde gelöscht."); });
+    const updateStatus = () => { const label=$("#connectionLabel")?.textContent || "Status unbekannt"; $("#settingsStatus").textContent=label; const dot=$("#connectionDot"); $("#settingsStatusDot").className="online-dot "+(dot?.classList.contains("offline")?"offline":dot?.classList.contains("checking")?"checking":""); };
+    updateStatus(); setInterval(updateStatus, 3000);
+  }
   async function boot() {
     await openDB();
     chats = (await get("chats")) || [];
@@ -119,7 +138,8 @@
     if (!chats.length) { const first = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()}; chats=[first]; activeChat=first.id; }
     if (!chats.some(c => c.id === activeChat)) activeChat = chats[0].id;
     $("#sendBtn").addEventListener("click", send);
-    $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
+    setupSettings();
     $("#akhiNewChat")?.addEventListener("click", makeChat);
     await save(); render();
   }
