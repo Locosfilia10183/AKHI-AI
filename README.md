@@ -1,29 +1,23 @@
-# AKHI AI – iPhone-first PWA (Phase 1)
+# AKHI AI – OpenRouter Backend
 
-Diese erste Version ist ein eigenständiger, kostenloser Web-App-Prototyp. Sie wurde ohne Lovable erstellt.
+Dieses Backend stellt `/api/chat` und `/api/health` bereit. Der OpenRouter-Schlüssel wird ausschließlich als Render-Umgebungsvariable gespeichert.
 
-## Enthalten
-- Dunkles AKHI-AI-Design, Desktop-Sidebar und iPhone-Bottom-Navigation
-- Lokale Chats und Verlauf (Browser-Speicher)
-- Lokales Memory hinzufügen/löschen
-- JSON-Export und -Import
-- 0-€-Budgetschutz: OpenAI, Claude und Grok sind nicht angebunden und als kostenpflichtig gesperrt
-- Ehrliche Meldung statt vorgetäuschter KI-Antworten
-- PWA-Manifest und Offline-Shell
-- Sprachausgabe, sofern Browser dies unterstützt
+## Render Web Service
+- Repository: `https://github.com/Locosfilia10183/AKHI-AI`
+- Runtime: Node
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Plan: Free (kann bei Inaktivität schlafen)
+- Region: Frankfurt
 
-## Noch nicht enthalten
-- Kein echtes KI-Modell ist verbunden. Chatnachrichten werden lokal gespeichert.
-- Die Worker-URL-Einstellung speichert nur eine Adresse; sie führt keine Requests aus.
-- Keine echte Websuche, PDF-Extraktion oder Bild-/Videogenerierung.
-- Daten werden aktuell über localStorage gespeichert; IndexedDB-Migration ist für Phase 2 vorgesehen.
-- Die Offline-Funktion muss nach Bereitstellung über HTTPS im Browser installiert werden.
+Die Dateien `package.json` und `server.js` müssen im Repository-Stammverzeichnis liegen.
 
-## Nutzung
-1. ZIP entpacken.
-2. Dateien auf einen statischen HTTPS-Host legen (z. B. GitHub Pages). Dafür ist kein eigener Server nötig.
-3. Auf dem iPhone in Safari die HTTPS-Adresse öffnen.
-4. Teilen → Zum Home-Bildschirm → Hinzufügen.
+## Render Environment Variables
+- `OPENROUTER_API_KEY` = neuer, geheimer API-Key (niemals in GitHub oder Frontend)
+- `OPENROUTER_MODEL` = `openrouter/free`
+- `ALLOWED_ORIGIN` = `https://akhi-ai.onrender.com`
 
-## Sicherheit & Kosten
-Keine API-Schlüssel in die App eintragen. Ein späterer Serverless-Proxy muss Schlüssel als Server-Secrets halten und kostenpflichtige Provider bei 0 € hart blockieren. Die App deployt nichts selbst und ruft keine kostenpflichtigen APIs auf.
+`openrouter/free` routet auf verfügbare kostenlose Modelle. Kostenlose Modelle haben Rate-Limits und Verfügbarkeit kann variieren. Es ist kein unbegrenzter Dienst.
+
+Nach dem Deploy lautet die Backend-URL ungefähr `https://DEIN-SERVICE.onrender.com`.
+In AKHI AI unter Einstellungen diese URL in das bisherige Feld „Cloudflare Worker URL“ eintragen. Das Feld akzeptiert dieselben `/api/chat`- und `/api/health`-Pfade.
