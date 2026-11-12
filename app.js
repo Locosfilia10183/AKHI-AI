@@ -256,16 +256,37 @@
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     const {data:{session}}=await supabaseClient.auth.getSession();authSession=session;userId=session?.user?.id||null;setSession(session);
     supabaseClient.auth.onAuthStateChange((event,nextSession)=>{const nextId=nextSession?.user?.id||null;authSession=nextSession;setSession(nextSession);if(["SIGNED_IN","SIGNED_OUT","USER_UPDATED"].includes(event)&&nextId!==userId)window.location.reload();});
-    const login=provider=>async()=>{message.textContent="Weiterleitung zur sicheren Anmeldung …";const {error}=await supabaseClient.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}});if(error)message.textContent=error.message;};
-    $("#googleLogin").addEventListener("click",login("google"));$("#appleLogin").addEventListener("click",login("apple"));
+    const explainAuthError = error => {
+      const raw=String(error?.message||"Unbekannter Fehler");
+      const lower=raw.toLowerCase();
+      if(lower.includes("invalid login credentials")) return "E-Mail oder Passwort ist falsch. Prüfe deine Eingaben oder erstelle zuerst ein Konto.";
+      if(lower.includes("email not confirmed")) return "Deine E-Mail-Adresse ist noch nicht bestätigt. Öffne den Bestätigungslink in deinem Postfach.";
+      if(lower.includes("user already registered")) return "Für diese E-Mail gibt es bereits ein Konto. Nutze „Mit E-Mail anmelden“.";
+      if(lower.includes("rate limit")||lower.includes("too many requests")) return "Zu viele Versuche. Bitte warte kurz und versuche es erneut.";
+      if(lower.includes("network")||lower.includes("fetch")) return "Der Anmeldedienst ist gerade nicht erreichbar. Prüfe deine Internetverbindung.";
+      return "Anmeldung fehlgeschlagen: "+raw;
+    };
+    const login=provider=>async()=>{
+      message.textContent="Sichere Anmeldung wird geöffnet …";
+      try { const {error}=await supabaseClient.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}}); if(error)message.textContent=explainAuthError(error); }
+      catch(error) { message.textContent=explainAuthError(error); }
+    };
+    $("#googleLogin").addEventListener("click",login("google"));
+    $("#appleLogin").addEventListener("click",login("apple"));
     const emailAction=async mode=>{
       const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
-      if(!email||password.length<8){message.textContent="Bitte gültige E-Mail und ein Passwort mit mindestens 8 Zeichen eingeben.";return;}
-      message.textContent=mode==="signup"?"Dein kostenloses Konto wird erstellt …":"Du wirst angemeldet …";
-      const result=mode==="signup"?await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}}):await supabaseClient.auth.signInWithPassword({email,password});
-      if(result.error){message.textContent=result.error.message;return;}
-      message.textContent=mode==="signup"?"Konto erstellt. Prüfe ggf. dein E-Mail-Postfach zur Bestätigung.":"Anmeldung erfolgreich …";
-      if(result.data?.session)window.location.reload();
+      if(!email||!email.includes("@")){message.textContent="Bitte gib eine gültige E-Mail-Adresse ein.";return;}
+      if(password.length<8){message.textContent="Dein Passwort muss mindestens 8 Zeichen lang sein.";return;}
+      const buttons=[$("#emailSignup"),$("#emailLogin"),$("#googleLogin"),$("#appleLogin")];
+      buttons.forEach(button=>button.disabled=true);
+      message.textContent=mode==="signup"?"Dein kostenloses Konto wird erstellt …":"Du wirst sicher angemeldet …";
+      try {
+        const result=mode==="signup" ? await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}}) : await supabaseClient.auth.signInWithPassword({email,password});
+        if(result.error){message.textContent=explainAuthError(result.error);return;}
+        if(result.data?.session){message.textContent="Anmeldung erfolgreich. AKHI AI wird geöffnet …";window.location.reload();return;}
+        message.textContent=mode==="signup"?"Konto angelegt! Bitte bestätige deine E-Mail über den Link in deinem Postfach. Danach kannst du dich hier anmelden.":"Es wurde keine aktive Sitzung zurückgegeben. Bitte bestätige zuerst deine E-Mail und melde dich erneut an.";
+      } catch(error) { message.textContent=explainAuthError(error); }
+      finally { buttons.forEach(button=>button.disabled=false); }
     };
     $("#emailSignup").addEventListener("click",()=>emailAction("signup"));
     $("#emailLogin").addEventListener("click",()=>emailAction("login"));
