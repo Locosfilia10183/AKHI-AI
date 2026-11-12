@@ -50,9 +50,18 @@
   function installSingleChatUI() {
     const style = document.createElement("style");
     style.textContent = `
-      .sidebar,.mobile-nav,#mobileMenu,[data-page]:not([data-page="chat"]),#themeBtn,
+      .sidebar,.mobile-nav,#mobileMenu,.nav-item,.new-chat,.nav-label,#chatHistory,
+      #themeBtn,[data-page]:not([data-page="chat"]),
       #modelSelect,.chat-history,.nav-label { display:none!important; }
-      .app{display:block!important}.main{width:100%!important;margin:0!important}
+      .app{display:block!important;width:100%!important;min-height:100dvh!important}
+      .main{width:100%!important;margin:0!important}
+      .topbar .crumb{display:none!important}
+      .page:not(#page-chat){display:none!important}
+      #page-chat{display:block!important}
+      .chat-layout{height:calc(100dvh - 65px)!important;min-height:0!important}
+      .chat-head select,.top-actions .free-pill{display:none!important}
+      .composer-wrap{position:sticky;bottom:0;background:var(--bg);padding-bottom:calc(12px + env(safe-area-inset-bottom))!important}
+      .akhi-downloads button{cursor:pointer}
       .topbar{justify-content:space-between!important}
       .chat-layout{max-width:900px!important;margin:0 auto!important}
       .chat-head h1{font-size:clamp(28px,5vw,42px)!important}
@@ -160,6 +169,36 @@
   }
   function localGreeting() { return INTRO; }
 
+
+  function addCodeDownloads(bubble, answer) {
+    const blocks = [...answer.matchAll(/```([^\n`]*)\n([\s\S]*?)```/g)];
+    if (!blocks.length) return;
+    const area = document.createElement("div");
+    area.className = "akhi-downloads";
+    area.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-top:12px";
+    blocks.forEach((match, index) => {
+      const info = match[1].trim();
+      const code = match[2].replace(/\n$/, "");
+      const lang = (info.split(/\s+/)[0] || "txt").toLowerCase();
+      const nameMatch = info.match(/(?:filename=)?([A-Za-z0-9_.-]+\.[A-Za-z0-9]+)$/);
+      const ext = ({js:"js",javascript:"js",ts:"ts",typescript:"ts",py:"py",python:"py",html:"html",css:"css",json:"json",java:"java",cs:"cs",csharp:"cs",cpp:"cpp",c:"c",php:"php",sql:"sql",sh:"sh",bash:"sh",md:"md",txt:"txt",yaml:"yml",yml:"yml",xml:"xml",jsx:"jsx",tsx:"tsx",rs:"rs",go:"go"}[lang] || "txt");
+      const filename = nameMatch ? nameMatch[1] : `akhi-datei-${index+1}.${ext}`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `↓ ${filename} herunterladen`;
+      btn.style.cssText = "background:#d8b46a;color:#17130b;border:0;border-radius:9px;padding:9px 12px;font-weight:700;font-size:12px";
+      btn.addEventListener("click", () => {
+        const blob = new Blob([code], {type:"text/plain;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = filename; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      area.append(btn);
+    });
+    bubble.append(area);
+  }
+
   async function send() {
     if (sending) return;
     const input = $("#prompt");
@@ -196,6 +235,7 @@
       if (!response.ok) throw new Error(data.error || `Serverfehler (${response.status})`);
       if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Die KI hat keine Antwort geliefert.");
       pending.textContent = data.reply;
+      addCodeDownloads(pending, data.reply);
       chat.messages.push({ role: "assistant", content: data.reply });
     } catch (err) {
       const msg = `Abi, ich kann das gerade nicht ausführen: ${err.message}. Bitte versuche es gleich noch einmal.`;
