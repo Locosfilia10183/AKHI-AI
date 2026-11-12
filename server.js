@@ -3,18 +3,26 @@ import http from "node:http";
 const PORT = Number(process.env.PORT || 10000);
 const API_KEY = process.env.OPENROUTER_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
-const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Strict free-only configuration: never read a user-selectable paid model.
+const GROQ_MODEL = "openai/gpt-oss-20b";
+const GEMINI_MODEL = "gemini-2.5-flash";
+const OPENROUTER_MODEL = "openrouter/free";
 
 async function requestAI(messages, temperature = 0) {
   const providers = [];
   if (GROQ_API_KEY) providers.push({
-    name: "Groq", model: GROQ_MODEL, key: GROQ_API_KEY,
+    name: "Groq", model: GROQ_MODEL,
     url: "https://api.groq.com/openai/v1/chat/completions",
     headers: {"Authorization": "Bearer " + GROQ_API_KEY, "Content-Type": "application/json"}
   });
+  if (GEMINI_API_KEY) providers.push({
+    name: "Google Gemini", model: GEMINI_MODEL,
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    headers: {"Authorization": "Bearer " + GEMINI_API_KEY, "Content-Type": "application/json"}
+  });
   if (API_KEY) providers.push({
-    name: "OpenRouter", model: MODEL, key: API_KEY,
+    name: "OpenRouter Free", model: OPENROUTER_MODEL,
     url: "https://openrouter.ai/api/v1/chat/completions",
     headers: {"Authorization": "Bearer " + API_KEY, "Content-Type": "application/json", "HTTP-Referer": "https://akhi-ai.onrender.com", "X-OpenRouter-Title": "AKHI AI"}
   });
@@ -54,7 +62,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
   const url = new URL(req.url || "/", "http://localhost");
   if (url.pathname === "/api/health" && req.method === "GET")
-    return send(res, 200, {ok:true, provider:GROQ_API_KEY ? "Groq → OpenRouter" : "OpenRouter", model:GROQ_API_KEY ? GROQ_MODEL : MODEL, configured:Boolean(GROQ_API_KEY || API_KEY), groqConfigured:Boolean(GROQ_API_KEY), openRouterConfigured:Boolean(API_KEY)});
+    return send(res, 200, {ok:true, provider:[GROQ_API_KEY && "Groq", GEMINI_API_KEY && "Google Gemini", API_KEY && "OpenRouter Free"].filter(Boolean).join(" → "), model:GROQ_MODEL, configured:Boolean(GROQ_API_KEY || GEMINI_API_KEY || API_KEY), groqConfigured:Boolean(GROQ_API_KEY), geminiConfigured:Boolean(GEMINI_API_KEY), openRouterConfigured:Boolean(API_KEY), freeOnly:true});
   if (url.pathname === "/api/image" && req.method === "POST") {
     if (origin && origin !== ALLOWED_ORIGIN) return send(res,403,{error:"Origin nicht erlaubt"});
     let body="";
@@ -73,7 +81,7 @@ const server = http.createServer(async (req, res) => {
   const now = Date.now(), recent = (hits.get(ip)||[]).filter(t=>now-t<60000);
   if (recent.length >= 24) return send(res,429,{error:"Zu viele Anfragen. Bitte kurz warten."});
   recent.push(now); hits.set(ip,recent);
-  if (!API_KEY && !GROQ_API_KEY) return send(res,503,{error:"Kein KI-API-Key konfiguriert."});
+  if (!API_KEY && !GROQ_API_KEY && !GEMINI_API_KEY) return send(res,503,{error:"Kein kostenloser KI-Anbieter konfiguriert."});
   let raw = "";
   for await (const chunk of req) {
     raw += chunk;
@@ -107,7 +115,7 @@ const server = http.createServer(async (req, res) => {
     const rawReply = result.choices?.[0]?.message?.content;
     const reply = typeof rawReply === "string" ? rawReply : Array.isArray(rawReply) ? rawReply.map(part=>part.text||"").join("\n").trim() : "";
     if (!reply) return send(res,502,{error:"OpenRouter hat keine Textantwort geliefert. Prüfe, ob dein Modell Bild-Eingaben unterstützt."});
-    return send(res,200,{reply,model:result.model|| (ai.provider === "Groq" ? GROQ_MODEL : MODEL),provider:ai.provider});
+    return send(res,200,{reply,model:result.model|| (ai.provider === "Groq" ? GROQ_MODEL : ai.provider === "Google Gemini" ? GEMINI_MODEL : OPENROUTER_MODEL),provider:ai.provider});
   } catch {
     return send(res,500,{error:"Serverfehler bei der KI-Anfrage."});
   }
