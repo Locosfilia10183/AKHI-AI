@@ -9,7 +9,7 @@
   const BACKEND = "https://akhi-ai-api.onrender.com";
   const SUPABASE_URL = "https://jeubdegyactnxjpperkr.supabase.co";
   const SUPABASE_KEY = "sb_publishable_UQAPvQ123TCoY8MdQdNODA_EhSGNdNv";
-  let supabaseClient = null;
+  let supabaseClient = null, authSession = null, userId = null;
   const INTRO = "Hallo! Ich bin die KI von Elham. Abi, er hat mich erschaffen. Ich helfe dir ab heute bei allem, wobei ich dich unterstützen kann. Wenn du Fragen hast, schreib Elham Abi. Was möchtest du machen?";
   let db, chats = [], activeChat = null, sending = false, memories = [];
 
@@ -38,8 +38,37 @@
   }
   const id = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
   const current = () => chats.find(c => c.id === activeChat);
-  async function save() { await put("chats", chats); await put("activeChat", activeChat); }
-  async function saveMemory() { await put("memory", memories); renderMemory(); }
+  const userKey = key => userId + ":" + key;
+  async function save() {
+    await put(userKey("chats"), chats); await put(userKey("activeChat"), activeChat);
+    if (supabaseClient && userId) {
+      const rows=chats.map(c=>({user_id:userId,id:c.id,title:c.title||"Neuer Chat",messages:c.messages||[],archived:!!c.archived,created_at:new Date(c.created||Date.now()).toISOString(),updated_at:new Date().toISOString()}));
+      const {error}=await supabaseClient.from("akhi_chats").upsert(rows,{onConflict:"user_id,id"});
+      if(error) console.warn("Cloud-Chat-Sync:",error.message);
+    }
+  }
+  async function saveMemory() {
+    await put(userKey("memory"), memories); renderMemory();
+    if(supabaseClient&&userId){const {error}=await supabaseClient.from("akhi_memories").upsert({user_id:userId,memories,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)console.warn("Cloud-Memory-Sync:",error.message);}
+  }
+  async function loadCloudData() {
+    const [chatResult,memoryResult]=await Promise.all([
+      supabaseClient.from("akhi_chats").select("id,title,messages,archived,created_at,updated_at").order("updated_at",{ascending:false}),
+      supabaseClient.from("akhi_memories").select("memories").maybeSingle()
+    ]);
+    if(chatResult.error)throw new Error("Cloud-Chats: "+chatResult.error.message);
+    if(memoryResult.error)throw new Error("Cloud-Gedächtnis: "+memoryResult.error.message);
+    if(Array.isArray(chatResult.data)&&chatResult.data.length){
+      chats=chatResult.data.map(c=>({id:c.id,title:c.title,messages:Array.isArray(c.messages)?c.messages:[],archived:!!c.archived,created:Date.parse(c.created_at)||Date.now()}));
+    } else {
+      chats=(await get(userKey("chats")))||[];
+    }
+    memories=Array.isArray(memoryResult.data?.memories)?memoryResult.data.memories:(await get(userKey("memory")))||[];
+    activeChat=(await get(userKey("activeChat")))||null;
+    if(!chats.some(c=>c.id===activeChat&&!c.archived))activeChat=chats.find(c=>!c.archived)?.id||null;
+    if(!chats.length||!activeChat){const first={id:id(),title:"Neuer Chat",messages:[],created:Date.now()};chats.unshift(first);activeChat=first.id;}
+    await save();await saveMemory();
+  }
   function renderMemory() { const host=$("#memoryList"); if(!host)return; host.replaceChildren(); $("#memoryCount").textContent=memories.length+" Erinnerungen"; if(!memories.length){const p=document.createElement("p");p.className="memory-empty";p.textContent="Noch keine Erinnerungen gespeichert.";host.append(p);return;} memories.forEach((item,index)=>{const row=document.createElement("div");row.className="memory-item";const span=document.createElement("span");span.textContent=item;const del=document.createElement("button");del.type="button";del.textContent="×";del.addEventListener("click",async()=>{memories.splice(index,1);await saveMemory();});row.append(span,del);host.append(row);}); }
   async function updateMemory(chat) { try { const r=await fetch(BACKEND+"/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({memory:memories,conversations:chats.filter(c=>!c.archived).slice(0,40).map(c=>({title:c.title||"Chat",messages:(c.messages||[]).slice(-40)}))})}); if(!r.ok)return; const d=await r.json(); if(Array.isArray(d.memory)){memories=d.memory.filter(x=>typeof x==="string").slice(0,40);await saveMemory();} } catch(e) { console.warn("Memory update failed",e); } }
 
@@ -171,17 +200,16 @@
     const setSession=session=>{document.body.classList.toggle("authenticated",!!session);gate.hidden=!!session;app.setAttribute("aria-hidden",String(!session));$("#accountEmail").textContent=session?.user?.email||"Nicht angemeldet";};
     if(!window.supabase?.createClient){message.textContent="Anmeldedienst konnte nicht geladen werden. Bitte Seite neu laden.";return;}
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    const {data:{session}}=await supabaseClient.auth.getSession();setSession(session);
-    supabaseClient.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession));
+    const {data:{session}}=await supabaseClient.auth.getSession();authSession=session;userId=session?.user?.id||null;setSession(session);
+    supabaseClient.auth.onAuthStateChange((event,nextSession)=>{const nextId=nextSession?.user?.id||null;authSession=nextSession;setSession(nextSession);if(["SIGNED_IN","SIGNED_OUT","USER_UPDATED"].includes(event)&&nextId!==userId)window.location.reload();});
     const login=provider=>async()=>{message.textContent="Weiterleitung zur sicheren Anmeldung …";const {error}=await supabaseClient.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}});if(error)message.textContent=error.message;};
     $("#googleLogin").addEventListener("click",login("google"));$("#appleLogin").addEventListener("click",login("apple"));
   }
   async function boot() {
     await initAuth();
+    if(!authSession){return;}
     await openDB();
-    chats = (await get("chats")) || [];
-    memories = (await get("memory")) || [];
-    activeChat = (await get("activeChat")) || null;
+    await loadCloudData();
     if (!chats.length) { const first = {id:id(), title:"Neuer Chat", messages:[], created:Date.now()}; chats=[first]; activeChat=first.id; }
     if (!chats.some(c => c.id === activeChat && !c.archived)) activeChat = chats.find(c=>!c.archived)?.id || null;
     if(!activeChat){const first={id:id(),title:"Neuer Chat",messages:[],created:Date.now()};chats.unshift(first);activeChat=first.id;}
@@ -189,7 +217,7 @@
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
     renderMemory();
-    updateMemory(current()).catch(()=>{});
+    // Erinnerungen werden erst nach einer echten Unterhaltung aktualisiert.
     setupSidebar();
     $("#newChatBtn").addEventListener("click", makeChat);
     $("#chatSearch").addEventListener("input", renderChatList);
