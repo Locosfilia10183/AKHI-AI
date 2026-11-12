@@ -144,7 +144,14 @@
 
   async function parseFile(file) {
     if(file.size>8*1024*1024) throw new Error(file.name+" ist größer als 8 MB.");
-    if(file.type.startsWith("image/")) return {name:file.name,type:"image",data:await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file);})};
+    if(file.type.startsWith("image/")) {
+      const source=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file);});
+      const img=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=source;});
+      const scale=Math.min(1,1600/Math.max(img.width,img.height));
+      const canvas=document.createElement("canvas");canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+      return {name:file.name,type:"image",data:canvas.toDataURL("image/jpeg",0.78)};
+    }
     let text="";
     if(/\.pdf$/i.test(file.name)){
       if(!window.pdfjsLib)throw new Error("PDF-Bibliothek nicht geladen.");
