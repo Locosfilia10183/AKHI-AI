@@ -48,6 +48,16 @@
     row.append(avatar, body); host.append(row); host.scrollTop = host.scrollHeight;
     return body;
   }
+  function setupSidebar() {
+    const toggle=$("#menuToggle"), backdrop=$("#sidebarBackdrop");
+    const close=()=>{document.body.classList.remove("sidebar-open");toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","Chat-Menü öffnen");};
+    const open=()=>{document.body.classList.add("sidebar-open");toggle.setAttribute("aria-expanded","true");toggle.setAttribute("aria-label","Chat-Menü schließen");};
+    toggle.addEventListener("click",()=>document.body.classList.contains("sidebar-open")?close():open());
+    backdrop.addEventListener("click",close);
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+    $("#newChatBtn").addEventListener("click",close);
+    $("#chatList").addEventListener("click",e=>{if(e.target.closest(".chat-item-title"))close();});
+  }
   function renderChatList() {
     const host=$("#chatList"); if(!host) return; host.replaceChildren();
     const query=($("#chatSearch")?.value||"").trim().toLowerCase();
@@ -157,6 +167,7 @@
     $("#sendBtn").addEventListener("click", send);
     $("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && localStorage.getItem("akhi-enter-send") !== "0") { e.preventDefault(); send(); } });
     setupSettings();
+    setupSidebar();
     $("#newChatBtn").addEventListener("click", makeChat);
     $("#chatSearch").addEventListener("input", renderChatList);
     $("#akhiNewChat")?.addEventListener("click", makeChat);
